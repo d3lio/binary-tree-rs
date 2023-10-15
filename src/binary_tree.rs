@@ -1,7 +1,9 @@
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+use std::num::NonZeroUsize;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[repr(transparent)]
 // TODO Check if this token comes from the same tree instance which prevents invalid indices.
-pub struct Token(usize);
+pub struct Token(NonZeroUsize);
 
 struct Node<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
@@ -38,8 +40,10 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 impl<T> Default for BinaryTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     fn default() -> Self {
+        let arena = vec![None];
+
         Self {
-            arena: Default::default(),
+            arena,
             root: Default::default(),
         }
     }
@@ -52,19 +56,19 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 
     pub fn get(&self, token: Token) -> &T {
-        &self.arena[token.0].as_ref().unwrap().data
+        &self.arena[token.0.get()].as_ref().unwrap().data
     }
 
     pub fn get_mut(&mut self, token: Token) -> &mut T {
-        &mut self.arena[token.0].as_mut().unwrap().data
+        &mut self.arena[token.0.get()].as_mut().unwrap().data
     }
 
     fn node(&self, token: Token) -> &Node<T> {
-        self.arena[token.0].as_ref().unwrap()
+        self.arena[token.0.get()].as_ref().unwrap()
     }
 
     fn node_mut(&mut self, token: Token) -> &mut Node<T> {
-        self.arena[token.0].as_mut().unwrap()
+        self.arena[token.0.get()].as_mut().unwrap()
     }
 
     pub fn add(&mut self, data: T) -> Token {
@@ -99,7 +103,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 
     pub fn remove(&mut self, token: Token) -> T {
-        let node = self.arena[token.0].take().unwrap();
+        let node = self.arena[token.0.get()].take().unwrap();
 
         match node.parent {
             None => {
@@ -169,13 +173,13 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 
     pub fn clear(&mut self) {
-        self.arena = vec![];
+        self.arena = vec![None];
         self.root = None;
     }
 
     fn create_node(&mut self, data: T) -> Token {
         self.arena.push(Some(Node::new(data)));
-        Token(self.arena.len() - 1)
+        Token(NonZeroUsize::new(self.arena.len() - 1).unwrap())
     }
 
     fn insert_left(&mut self, parent: Token, token: Token) {
@@ -299,7 +303,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 
         Self::push_all_left_children(&self.tree, top.and_then(|top| self.tree.node(top).children.1), &mut self.stack);
 
-        top.and_then(|token| self.tree.arena[token.0].take().map(|node| node.data))
+        top.and_then(|token| self.tree.arena[token.0.get()].take().map(|node| node.data))
     }
 
     // Nightly
@@ -329,7 +333,7 @@ mod test {
     fn empty() {
         let bt = BinaryTree::<u32>::new();
 
-        assert_eq!(bt.arena.len(), 0);
+        assert_eq!(bt.arena.len(), 1);
         assert_eq!(bt.root, None);
         assert_eq!(bt.iter().collect::<Vec<_>>(), Vec::<&u32>::new());
     }
@@ -339,9 +343,9 @@ mod test {
         let mut bt = BinaryTree::<u32>::new();
         let token = bt.add(1);
 
-        assert_eq!(token.0, 0);
-        assert_eq!(bt.arena.len(), 1);
-        assert_eq!(bt.root, Some(Token(0)));
+        assert_eq!(token.0.get(), 1);
+        assert_eq!(bt.arena.len(), 2);
+        assert_eq!(bt.root, Some(Token(NonZeroUsize::new(1).unwrap())));
         assert_iter_eq!(bt, vec![1]);
     }
 
@@ -353,10 +357,10 @@ mod test {
         let token3 = bt.add(2);
         let token4 = bt.add(3);
 
-        assert_eq!(token1.0, 0);
-        assert_eq!(token2.0, 1);
-        assert_eq!(token3.0, 2);
-        assert_eq!(token4.0, 3);
+        assert_eq!(token1.0.get(), 1);
+        assert_eq!(token2.0.get(), 2);
+        assert_eq!(token3.0.get(), 3);
+        assert_eq!(token4.0.get(), 4);
         assert_iter_eq!(bt, vec![1, 2, 3, 5]);
     }
 }
