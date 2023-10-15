@@ -1,4 +1,4 @@
-use std::{num::NonZeroUsize, ops::{Index, IndexMut}};
+use std::{num::NonZeroUsize, ops::Index};
 
 /// Index for values inside a [`BinaryTree`].
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -23,6 +23,18 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
+/// Binary search tree.
+///
+/// This structure is unbalanced.
+///
+/// ```
+/// # use binary_tree::*;
+/// # fn main() {
+/// let mut bt = BinaryTree::new();
+/// let token = bt.add(1);
+/// assert_eq!(bt.get(token), Some(&1));
+/// # }
+/// ```
 pub struct BinaryTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     arena: Vec<Option<Node<T>>>,
@@ -59,29 +71,6 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// ```
     pub fn get(&self, token: Token) -> Option<&T> {
         self.arena[token.0.get()].as_ref().map(|node| &node.data)
-    }
-
-    /// Get mutable reference to the data indexed by `token`.
-    ///
-    /// ```
-    /// # use binary_tree::*;
-    /// # fn main() {
-    /// let mut bt = BinaryTree::new();
-    /// let token = bt.add(1);
-    /// *bt.get_mut(token).unwrap() = 2;
-    /// assert_eq!(bt.get_mut(token), Some(&mut 2));
-    /// # }
-    /// ```
-    pub fn get_mut(&mut self, token: Token) -> Option<&mut T> {
-        self.arena[token.0.get()].as_mut().map(|node| &mut node.data)
-    }
-
-    fn node(&self, token: Token) -> &Node<T> {
-        self.arena[token.0.get()].as_ref().unwrap()
-    }
-
-    fn node_mut(&mut self, token: Token) -> &mut Node<T> {
-        self.arena[token.0.get()].as_mut().unwrap()
     }
 
     /// Add a new item to the tree.
@@ -240,6 +229,14 @@ where T: Eq + PartialEq + Ord + PartialOrd {
         self.root = None;
     }
 
+    fn node(&self, token: Token) -> &Node<T> {
+        self.arena[token.0.get()].as_ref().unwrap()
+    }
+
+    fn node_mut(&mut self, token: Token) -> &mut Node<T> {
+        self.arena[token.0.get()].as_mut().unwrap()
+    }
+
     fn create_node(&mut self, data: T) -> Token {
         self.arena.push(Some(Node::new(data)));
         Token(NonZeroUsize::new(self.arena.len() - 1).unwrap())
@@ -255,6 +252,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
         self.node_mut(token).parent = Some(parent);
     }
 
+    /// See [`Iter`].
     pub fn iter(&self) -> Iter<T> {
         Iter::new(self)
     }
@@ -266,13 +264,6 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 
     fn index(&self, index: Token) -> &Self::Output {
         &self.arena[index.0.get()].as_ref().unwrap().data
-    }
-}
-
-impl<T> IndexMut<Token> for BinaryTree<T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    fn index_mut(&mut self, index: Token) -> &mut Self::Output {
-        &mut self.arena[index.0.get()].as_mut().unwrap().data
     }
 }
 
@@ -445,19 +436,6 @@ mod test {
         assert_eq!(bt.size(), 1);
         assert_eq!(bt.root, Some(Token(NonZeroUsize::new(1).unwrap())));
         assert_iter_eq!(bt, vec![1]);
-    }
-
-    #[test]
-    fn mutate_element() {
-        let mut bt = BinaryTree::<u32>::new();
-        let token = bt.add(1);
-
-        *bt.get_mut(token).unwrap() = 123;
-
-        assert_eq!(token.0.get(), 1);
-        assert_eq!(bt.arena.len(), 2);
-        assert_eq!(bt.root, Some(Token(NonZeroUsize::new(1).unwrap())));
-        assert_iter_eq!(bt, vec![123]);
     }
 
     #[test]
