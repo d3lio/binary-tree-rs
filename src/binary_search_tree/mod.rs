@@ -6,7 +6,7 @@ use std::{num::NonZeroUsize, ops::Index};
 pub use iter::*;
 pub use into_iter::*;
 
-/// Index for values inside a [`BinaryTree`].
+/// Index for values inside a [`BinarySearchTree`].
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 #[repr(transparent)]
 pub struct Token(NonZeroUsize);
@@ -53,22 +53,22 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 /// This structure is unbalanced.
 ///
 /// ```
-/// # use binary_tree::*;
+/// # use binary_search_tree::*;
 /// # fn main() {
-/// let mut bt = BinaryTree::new();
+/// let mut bt = BinarySearchTree::new();
 /// let token = bt.add(1);
 /// assert_eq!(bt.get(token), Some(&1));
 /// # }
 /// ```
 #[derive(Clone, Debug)]
-pub struct BinaryTree<T>
+pub struct BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     arena: Vec<Option<Node<T>>>,
     root: Option<Token>,
     size: usize,
 }
 
-impl<T> Default for BinaryTree<T>
+impl<T> Default for BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     fn default() -> Self {
         Self {
@@ -79,7 +79,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
-impl<T> BinaryTree<T>
+impl<T> BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     pub fn new() -> Self {
         Self::default()
@@ -88,9 +88,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Get reference to the element indexed by `token`.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// let token = bt.add(1);
     /// assert_eq!(bt.get(token), Some(&1));
     /// # }
@@ -102,9 +102,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Get the min element.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// bt.add(1);
     /// bt.add(5);
     /// bt.add(2);
@@ -128,9 +128,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Get the max element.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// bt.add(1);
     /// bt.add(5);
     /// bt.add(2);
@@ -154,9 +154,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Add a new item to the tree.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// let token = bt.add(1);
     /// assert_eq!(bt.get(token), Some(&1));
     /// # }
@@ -195,9 +195,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Remove an item from the tree.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// let token = bt.add(1);
     /// assert_eq!(bt.size(), 1);
     /// bt.remove(token);
@@ -267,9 +267,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Get the size of the tree.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// let token = bt.add(1);
     /// assert_eq!(bt.size(), 1);
     /// bt.remove(token);
@@ -283,9 +283,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Check if the tree is empty.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// assert_eq!(bt.is_empty(), true);
     /// let token = bt.add(1);
     /// assert_eq!(bt.is_empty(), false);
@@ -300,9 +300,9 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// Clear the tree.
     ///
     /// ```
-    /// # use binary_tree::*;
+    /// # use binary_search_tree::*;
     /// # fn main() {
-    /// let mut bt = BinaryTree::new();
+    /// let mut bt = BinarySearchTree::new();
     /// let token = bt.add(1);
     /// assert_eq!(bt.size(), 1);
     /// bt.clear();
@@ -360,7 +360,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
-impl<T> Index<Token> for BinaryTree<T>
+impl<T> Index<Token> for BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     type Output = T;
 
@@ -369,10 +369,10 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
-impl<T> FromIterator<T> for BinaryTree<T>
+impl<T> FromIterator<T> for BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        let mut bt = BinaryTree::new();
+        let mut bt = BinarySearchTree::new();
         for node in iter {
             bt.add(node);
         }
@@ -380,7 +380,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
-impl<T> IntoIterator for BinaryTree<T>
+impl<T> IntoIterator for BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     type Item = T;
 
@@ -391,7 +391,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
-impl<'a, T> IntoIterator for &'a BinaryTree<T>
+impl<'a, T> IntoIterator for &'a BinarySearchTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     type Item = &'a T;
 
@@ -414,7 +414,7 @@ mod test {
 
     #[test]
     fn empty() {
-        let bt = BinaryTree::<u32>::new();
+        let bt = BinarySearchTree::<u32>::new();
 
         assert_eq!(bt.arena.len(), 1);
         assert_eq!(bt.root, None);
@@ -424,7 +424,7 @@ mod test {
 
     #[test]
     fn one_element() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let token = bt.add(1);
 
         assert_eq!(token.get(), 1);
@@ -436,7 +436,7 @@ mod test {
 
     #[test]
     fn multiple_elements() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         assert_eq!(bt.size(), 0);
         let token1 = bt.add(1);
         let token2 = bt.add(5);
@@ -453,31 +453,31 @@ mod test {
 
     #[test]
     fn min() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_ >>();
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_ >>();
         assert_eq!(bt.min(), Some(&1));
     }
 
     #[test]
     fn min_none() {
-        let bt = BinaryTree::<u32>::new();
+        let bt = BinarySearchTree::<u32>::new();
         assert_eq!(bt.min(), None);
     }
 
     #[test]
     fn max() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_ >>();
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_ >>();
         assert_eq!(bt.max(), Some(&5));
     }
 
     #[test]
     fn max_none() {
-        let bt = BinaryTree::<u32>::new();
+        let bt = BinarySearchTree::<u32>::new();
         assert_eq!(bt.max(), None);
     }
 
     #[test]
     fn clear() {
-        let mut bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let mut bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_>>();
 
         assert_eq!(bt.arena.len(), 5);
         assert_eq!(bt.size(), 4);
@@ -493,7 +493,7 @@ mod test {
 
     #[test]
     fn into_iterator_for_loop_consume() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_>>();
         let mut collected = vec![];
         for item in bt {
             collected.push(item);
@@ -504,7 +504,7 @@ mod test {
 
     #[test]
     fn into_iterator_for_loop_ref() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_>>();
         let mut collected = vec![];
         for item in &bt {
             collected.push(item);
@@ -534,7 +534,7 @@ mod remove_test {
     #[test]
     fn complex_tree() {
         let input = vec![7, 2, 1, 5, 10, 3, 4, 6, 8, 9];
-        let bt = input.into_iter().collect::<BinaryTree<_>>();
+        let bt = input.into_iter().collect::<BinarySearchTree<_>>();
 
         assert_eq!(bt.size(), 10);
         assert_iter_eq!(bt, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -543,7 +543,7 @@ mod remove_test {
 
     #[test]
     fn remove_left_with_right_child() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         bt.add(2);
         bt.add(1);
@@ -564,7 +564,7 @@ mod remove_test {
 
     #[test]
     fn remove_left_with_left_child() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         bt.add(2);
         let token = bt.add(1);
@@ -585,7 +585,7 @@ mod remove_test {
 
     #[test]
     fn remove_left_with_two_children() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         let token = bt.add(2);
         bt.add(1);
@@ -601,7 +601,7 @@ mod remove_test {
 
     #[test]
     fn remove_left_with_no_children() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         bt.add(2);
         let token = bt.add(1);
@@ -622,7 +622,7 @@ mod remove_test {
 
     #[test]
     fn remove_right_with_right_child() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         bt.add(2);
         bt.add(1);
@@ -643,7 +643,7 @@ mod remove_test {
 
     #[test]
     fn remove_right_with_left_child() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         bt.add(2);
         bt.add(1);
@@ -663,7 +663,7 @@ mod remove_test {
 
     #[test]
     fn remove_right_with_two_children() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         let token = bt.add(10);
         bt.add(9);
@@ -680,7 +680,7 @@ mod remove_test {
 
     #[test]
     fn remove_right_with_no_children() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         bt.add(7);
         bt.add(2);
         bt.add(1);
@@ -701,7 +701,7 @@ mod remove_test {
 
     #[test]
     fn remove_half() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let tokens = [
             bt.add(7),
             bt.add(2),
@@ -726,7 +726,7 @@ mod remove_test {
 
     #[test]
     fn remove_when_duplicate() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let token = bt.add(1);
         bt.add(1);
         bt.add(1);
@@ -740,7 +740,7 @@ mod remove_test {
 
     #[test]
     fn reuse_free_arena_space() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let mut tokens = vec![
             bt.add(2),
             bt.add(1),
@@ -774,7 +774,7 @@ mod remove_test {
 
     #[test]
     fn arena_remove_last_if_none_optimization() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let mut tokens = vec![
             bt.add(2),
             bt.add(1),
@@ -808,7 +808,7 @@ mod remove_test {
 
     #[test]
     fn remove_all_elements() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let tokens = vec![
             bt.add(2),
             bt.add(1),
@@ -828,7 +828,7 @@ mod remove_test {
 
     #[test]
     fn remove_all_elements_and_add_more() {
-        let mut bt = BinaryTree::<u32>::new();
+        let mut bt = BinarySearchTree::<u32>::new();
         let tokens = vec![
             bt.add(2),
             bt.add(1),

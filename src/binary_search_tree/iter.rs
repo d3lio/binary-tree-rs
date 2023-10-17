@@ -1,13 +1,13 @@
-use crate::{BinaryTree, Token};
+use crate::{BinarySearchTree, Token};
 
-/// Iterates a [`BinaryTree`].
+/// Iterates a [`BinarySearchTree`].
 ///
 /// Guaranteed to be sorted since this is a binary search tree.
 ///
 /// ```
-/// # use binary_tree::*;
+/// # use binary_search_tree::*;
 /// # fn main() {
-/// let bt = vec![5, 2, 10, 7, 1].into_iter().collect::<BinaryTree<_>>();
+/// let bt = vec![5, 2, 10, 7, 1].into_iter().collect::<BinarySearchTree<_>>();
 /// let vec = bt.iter().collect::<Vec<_>>();
 /// assert_eq!(vec, vec![&1, &2, &5, &7, &10]);
 /// # }
@@ -15,14 +15,14 @@ use crate::{BinaryTree, Token};
 #[derive(Clone, Debug)]
 pub struct Iter<'a, T>
 where T: Eq + PartialEq + Ord + PartialOrd {
-    tree: &'a BinaryTree<T>,
+    tree: &'a BinarySearchTree<T>,
     stack: Vec<Token>,
 
 }
 
 impl<'a, T> Iter<'a, T>
 where T: Eq + PartialEq + Ord + PartialOrd {
-    pub(crate) fn new(tree: &'a BinaryTree<T>) -> Self {
+    pub(crate) fn new(tree: &'a BinarySearchTree<T>) -> Self {
         let mut inst = Self {
             tree,
             stack: vec![],
@@ -91,29 +91,29 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 
 #[cfg(test)]
 mod test {
-    use crate::BinaryTree;
+    use crate::BinarySearchTree;
 
     #[test]
     fn min() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_ >>();
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_ >>();
         assert_eq!(bt.iter().min(), Some(&1));
     }
 
     #[test]
     fn min_none() {
-        let bt = BinaryTree::<u32>::new();
+        let bt = BinarySearchTree::<u32>::new();
         assert_eq!(bt.iter().min(), None);
     }
 
     #[test]
     fn max() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_ >>();
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinarySearchTree<_ >>();
         assert_eq!(bt.iter().max(), Some(&5));
     }
 
     #[test]
     fn max_none() {
-        let bt = BinaryTree::<u32>::new();
+        let bt = BinarySearchTree::<u32>::new();
         assert_eq!(bt.iter().max(), None);
     }
 }
