@@ -1,4 +1,10 @@
+mod iter;
+mod into_iter;
+
 use std::{num::NonZeroUsize, ops::Index};
+
+pub use iter::*;
+pub use into_iter::*;
 
 /// Index for values inside a [`BinaryTree`].
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
@@ -9,9 +15,13 @@ impl Token {
     fn new(index: usize) -> Self {
         Self(NonZeroUsize::new(index).unwrap())
     }
+
+    fn get(&self) -> usize {
+        self.0.get()
+    }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Node<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     data: T,
@@ -42,7 +52,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 /// assert_eq!(bt.get(token), Some(&1));
 /// # }
 /// ```
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct BinaryTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     arena: Vec<Option<Node<T>>>,
@@ -67,7 +77,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
         Self::default()
     }
 
-    /// Get reference to the data indexed by `token`.
+    /// Get reference to the element indexed by `token`.
     ///
     /// ```
     /// # use binary_tree::*;
@@ -78,7 +88,59 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// # }
     /// ```
     pub fn get(&self, token: Token) -> Option<&T> {
-        self.arena[token.0.get()].as_ref().map(|node| &node.data)
+        self.arena[token.get()].as_ref().map(|node| &node.data)
+    }
+
+    /// Get the min element.
+    ///
+    /// ```
+    /// # use binary_tree::*;
+    /// # fn main() {
+    /// let mut bt = BinaryTree::new();
+    /// bt.add(1);
+    /// bt.add(5);
+    /// bt.add(2);
+    /// assert_eq!(bt.min(), Some(&1));
+    /// # }
+    /// ```
+    pub fn min(&self) -> Option<&T> {
+        let mut current = self.root;
+
+        while let Some(token) = current {
+            if let Some(left) = self.node(token).children.0 {
+                current = Some(left);
+            } else {
+                return current.and_then(|token| self.get(token))
+            }
+        }
+
+        None
+    }
+
+    /// Get the max element.
+    ///
+    /// ```
+    /// # use binary_tree::*;
+    /// # fn main() {
+    /// let mut bt = BinaryTree::new();
+    /// bt.add(1);
+    /// bt.add(5);
+    /// bt.add(2);
+    /// assert_eq!(bt.max(), Some(&5));
+    /// # }
+    /// ```
+    pub fn max(&self) -> Option<&T> {
+        let mut current = self.root;
+
+        while let Some(token) = current {
+            if let Some(left) = self.node(token).children.1 {
+                current = Some(left);
+            } else {
+                return current.and_then(|token| self.get(token))
+            }
+        }
+
+        None
     }
 
     /// Add a new item to the tree.
@@ -137,7 +199,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     pub fn remove(&mut self, token: Token) -> Option<T> {
         self.size -= 1;
 
-        let node = self.arena[token.0.get()].take()?;
+        let node = self.arena[token.get()].take()?;
 
         match node.parent {
             None => {
@@ -262,11 +324,11 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 
     fn node(&self, token: Token) -> &Node<T> {
-        self.arena[token.0.get()].as_ref().unwrap()
+        self.arena[token.get()].as_ref().unwrap()
     }
 
     fn node_mut(&mut self, token: Token) -> &mut Node<T> {
-        self.arena[token.0.get()].as_mut().unwrap()
+        self.arena[token.get()].as_mut().unwrap()
     }
 
     fn create_node(&mut self, data: T) -> Token {
@@ -326,65 +388,6 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
-/// Iterates a [`BinaryTree`].
-///
-/// Guaranteed to be sorted since this is a binary search tree.
-///
-/// ```
-/// # use binary_tree::*;
-/// # fn main() {
-/// let bt = vec![5, 2, 10, 7, 1].into_iter().collect::<BinaryTree<_>>();
-/// let vec = bt.iter().collect::<Vec<_>>();
-/// assert_eq!(vec, vec![&1, &2, &5, &7, &10]);
-/// # }
-/// ```
-pub struct Iter<'a, T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    tree: &'a BinaryTree<T>,
-    stack: Vec<Token>,
-}
-
-impl<'a, T> Iter<'a, T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    fn new(tree: &'a BinaryTree<T>) -> Self {
-        let mut inst = Self {
-            tree,
-            stack: vec![],
-        };
-
-        inst.push_all_left_children(tree.root);
-
-        inst
-    }
-
-    fn push_all_left_children(&mut self, mut current: Option<Token>) {
-        while let Some(token) = current.take() {
-            self.stack.push(token);
-            if let (Some(left), _) = self.tree.node(token).children {
-                current = Some(left);
-            }
-        }
-    }
-}
-
-impl<'a, T> Iterator for Iter<'a, T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let top = self.stack.pop();
-
-        self.push_all_left_children(top.and_then(|top| self.tree.node(top).children.1));
-
-        top.map(|token| &self.tree[token])
-    }
-
-    #[cfg(nightly)]
-    fn is_sorted(self) -> bool {
-        true
-    }
-}
-
 impl<T> IntoIterator for BinaryTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     type Item = T;
@@ -404,65 +407,6 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 
     fn into_iter(self) -> Self::IntoIter {
         Iter::new(self)
-    }
-}
-
-/// Iterates a [`BinaryTree`].
-///
-/// Guaranteed to be sorted since this is a binary search tree.
-///
-/// ```
-/// # use binary_tree::*;
-/// # fn main() {
-/// let bt = vec![5, 2, 10, 7, 1].into_iter().collect::<BinaryTree<_>>();
-/// let vec = bt.into_iter().collect::<Vec<_>>();
-/// assert_eq!(vec, vec![1, 2, 5, 7, 10]);
-/// # }
-/// ```
-pub struct IntoIter<T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    tree: BinaryTree<T>,
-    stack: Vec<Token>,
-}
-
-impl<T> IntoIter<T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    fn new(tree: BinaryTree<T>) -> Self {
-        let mut inst = Self {
-            tree,
-            stack: vec![],
-        };
-
-        inst.push_all_left_children(inst.tree.root);
-
-        inst
-    }
-
-    fn push_all_left_children(&mut self, mut current: Option<Token>) {
-        while let Some(token) = current.take() {
-            self.stack.push(token);
-            if let (Some(left), _) = self.tree.node(token).children {
-                current = Some(left);
-            }
-        }
-    }
-}
-
-impl<T> Iterator for IntoIter<T>
-where T: Eq + PartialEq + Ord + PartialOrd {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let top = self.stack.pop();
-
-        self.push_all_left_children(top.and_then(|top| self.tree.node(top).children.1));
-
-        top.and_then(|token| self.tree.arena[token.0.get()].take().map(|node| node.data))
-    }
-
-    #[cfg(nightly)]
-    fn is_sorted(self) -> bool {
-        true
     }
 }
 
@@ -491,7 +435,7 @@ mod test {
         let mut bt = BinaryTree::<u32>::new();
         let token = bt.add(1);
 
-        assert_eq!(token.0.get(), 1);
+        assert_eq!(token.get(), 1);
         assert_eq!(bt.arena.len(), 2);
         assert_eq!(bt.size(), 1);
         assert_eq!(bt.root, Some(Token::new(1)));
@@ -516,6 +460,30 @@ mod test {
     }
 
     #[test]
+    fn min() {
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_ >>();
+        assert_eq!(bt.min(), Some(&1));
+    }
+
+    #[test]
+    fn min_none() {
+        let bt = BinaryTree::<u32>::new();
+        assert_eq!(bt.min(), None);
+    }
+
+    #[test]
+    fn max() {
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_ >>();
+        assert_eq!(bt.max(), Some(&5));
+    }
+
+    #[test]
+    fn max_none() {
+        let bt = BinaryTree::<u32>::new();
+        assert_eq!(bt.max(), None);
+    }
+
+    #[test]
     fn clear() {
         let mut bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
 
@@ -529,6 +497,28 @@ mod test {
         assert_eq!(bt.root, None);
         assert_eq!(bt.size(), 0);
         assert_eq!(bt.is_empty(), true);
+    }
+
+    #[test]
+    fn into_iterator_for_loop_consume() {
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let mut collected = vec![];
+        for item in bt {
+            collected.push(item);
+        }
+
+        assert_eq!(collected, vec![1, 2, 3, 5]);
+    }
+
+    #[test]
+    fn into_iterator_for_loop_ref() {
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let mut collected = vec![];
+        for item in &bt {
+            collected.push(item);
+        }
+
+        assert_eq!(collected, vec![&1, &2, &3, &5]);
     }
 }
 
@@ -754,28 +744,6 @@ mod remove_test {
         assert_eq!(bt.size(), 2);
         assert_iter_eq!(bt, vec![1, 1]);
         assert_into_iter_eq!(bt, vec![1, 1]);
-    }
-
-    #[test]
-    fn into_iterator_for_loop_consume() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
-        let mut collected = vec![];
-        for item in bt {
-            collected.push(item);
-        }
-
-        assert_eq!(collected, vec![1, 2, 3, 5]);
-    }
-
-    #[test]
-    fn into_iterator_for_loop_ref() {
-        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
-        let mut collected = vec![];
-        for item in &bt {
-            collected.push(item);
-        }
-
-        assert_eq!(collected, vec![&1, &2, &3, &5]);
     }
 
     #[test]
