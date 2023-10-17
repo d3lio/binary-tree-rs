@@ -203,6 +203,10 @@ where T: Eq + PartialEq + Ord + PartialOrd {
             },
         };
 
+        while let Some(None) = self.arena[1..].last() {
+            self.arena.pop();
+        }
+
         Some(node.data)
     }
 
@@ -785,8 +789,8 @@ mod remove_test {
         assert_eq!(bt.size(), 3);
         assert_eq!(bt.arena.len(), 4);
 
+        bt.remove(tokens[0]);
         bt.remove(tokens[1]);
-        bt.remove(tokens[2]);
 
         assert_eq!(bt.size(), 1);
         assert_eq!(bt.arena.len(), 4);
@@ -795,6 +799,40 @@ mod remove_test {
 
         assert_eq!(bt.size(), 2);
         assert_eq!(bt.arena.len(), 4);
+
+        tokens.push(bt.add(3));
+
+        assert_eq!(bt.size(), 3);
+        assert_eq!(bt.arena.len(), 4);
+
+        tokens.push(bt.add(5));
+
+        assert_eq!(bt.size(), 4);
+        assert_eq!(bt.arena.len(), 5);
+    }
+
+    #[test]
+    fn arena_remove_last_if_none_optimization() {
+        let mut bt = BinaryTree::<u32>::new();
+        let mut tokens = vec![
+            bt.add(2),
+            bt.add(1),
+            bt.add(3),
+        ];
+
+        assert_eq!(bt.size(), 3);
+        assert_eq!(bt.arena.len(), 4);
+
+        bt.remove(tokens[1]);
+        bt.remove(tokens[2]);
+
+        assert_eq!(bt.size(), 1);
+        assert_eq!(bt.arena.len(), 2);
+
+        tokens.push(bt.add(2));
+
+        assert_eq!(bt.size(), 2);
+        assert_eq!(bt.arena.len(), 3);
 
         tokens.push(bt.add(3));
 
