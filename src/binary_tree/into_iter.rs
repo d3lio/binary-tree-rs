@@ -27,12 +27,12 @@ where T: Eq + PartialEq + Ord + PartialOrd {
             stack: vec![],
         };
 
-        inst.push_all_left_children(inst.tree.root);
+        inst.push_all_left_nodes(inst.tree.root);
 
         inst
     }
 
-    fn push_all_left_children(&mut self, mut current: Option<Token>) {
+    fn push_all_left_nodes(&mut self, mut current: Option<Token>) {
         while let Some(token) = current.take() {
             self.stack.push(token);
             if let (Some(left), _) = self.tree.node(token).children {
@@ -49,7 +49,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     fn next(&mut self) -> Option<Self::Item> {
         let top = self.stack.pop();
 
-        self.push_all_left_children(top.and_then(|top| self.tree.node(top).children.1));
+        self.push_all_left_nodes(top.and_then(|top| self.tree.node(top).children.1));
 
         top.and_then(|token| self.tree.arena[token.get()].take().map(|node| node.data))
     }
@@ -61,10 +61,6 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     #[cfg(is_sorted)]
     fn is_sorted(self) -> bool {
         true
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (self.tree.size(), Some(self.tree.size()))
     }
 
     fn min(mut self) -> Option<Self::Item> {
@@ -97,6 +93,10 @@ where T: Eq + PartialEq + Ord + PartialOrd {
         }
 
         None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.tree.size(), Some(self.tree.size()))
     }
 }
 

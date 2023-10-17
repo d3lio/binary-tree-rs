@@ -38,6 +38,14 @@ where T: Eq + PartialEq + Ord + PartialOrd {
             children: (None, None),
         }
     }
+
+    fn replace_child(&mut self, target: Token, value: Option<Token>) {
+        if self.children.0 == Some(target) {
+            self.children.0 = value
+        } else {
+            self.children.1 = value
+        }
+    }
 }
 
 /// Binary search tree.
@@ -227,37 +235,21 @@ where T: Eq + PartialEq + Ord + PartialOrd {
                 match node.children {
                     (None, None) => {
                         let parent_node = self.node_mut(parent);
-                        if parent_node.children.0 == Some(token) {
-                            parent_node.children.0 = None
-                        } else {
-                            parent_node.children.1 = None
-                        }
+                        parent_node.replace_child(token, None);
                     },
                     (Some(left), None) => {
                         let parent_node = self.node_mut(parent);
-                        if parent_node.children.0 == Some(token) {
-                            parent_node.children.0 = Some(left)
-                        } else {
-                            parent_node.children.1 = Some(left)
-                        }
+                        parent_node.replace_child(token, Some(left));
                         self.node_mut(left).parent = Some(parent);
                     }
                     (None, Some(right)) => {
                         let parent_node = self.node_mut(parent);
-                        if parent_node.children.0 == Some(token) {
-                            parent_node.children.0 = Some(right)
-                        } else {
-                            parent_node.children.1 = Some(right)
-                        }
+                        parent_node.replace_child(token, Some(right));
                         self.node_mut(right).parent = Some(parent);
                     },
                     (Some(left), Some(right)) => {
                         let parent_node = self.node_mut(parent);
-                        if parent_node.children.0 == Some(token) {
-                            parent_node.children.0 = Some(right);
-                        } else {
-                            parent_node.children.1 = Some(right);
-                        }
+                        parent_node.replace_child(token, Some(right));
                         self.node_mut(right).parent = Some(parent);
                         self.add_by_token(Some(right), left);
                     },
