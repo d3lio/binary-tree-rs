@@ -379,10 +379,10 @@ where T: Eq + PartialEq + Ord + PartialOrd {
         top.map(|token| &self.tree[token])
     }
 
-    // Nightly
-    // fn is_sorted(self) -> bool {
-    //     true
-    // }
+    #[cfg(nightly)]
+    fn is_sorted(self) -> bool {
+        true
+    }
 }
 
 impl<T> IntoIterator for BinaryTree<T>
@@ -460,10 +460,10 @@ where T: Eq + PartialEq + Ord + PartialOrd {
         top.and_then(|token| self.tree.arena[token.0.get()].take().map(|node| node.data))
     }
 
-    // Nightly
-    // fn is_sorted(self) -> bool {
-    //     true
-    // }
+    #[cfg(nightly)]
+    fn is_sorted(self) -> bool {
+        true
+    }
 }
 
 #[cfg(test)]
