@@ -428,19 +428,20 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 impl<T> IntoIter<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     fn new(tree: BinaryTree<T>) -> Self {
-        let mut stack = vec![];
-        Self::push_all_left_children(&tree, tree.root, &mut stack);
-
-        Self {
+        let mut inst = Self {
             tree,
-            stack,
-        }
+            stack: vec![],
+        };
+
+        inst.push_all_left_children(inst.tree.root);
+
+        inst
     }
 
-    fn push_all_left_children(tree: &BinaryTree<T>, mut current: Option<Token>, stack: &mut Vec<Token>) {
+    fn push_all_left_children(&mut self, mut current: Option<Token>) {
         while let Some(token) = current.take() {
-            stack.push(token);
-            if let (Some(left), _) = tree.node(token).children {
+            self.stack.push(token);
+            if let (Some(left), _) = self.tree.node(token).children {
                 current = Some(left);
             }
         }
@@ -454,7 +455,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     fn next(&mut self) -> Option<Self::Item> {
         let top = self.stack.pop();
 
-        Self::push_all_left_children(&self.tree, top.and_then(|top| self.tree.node(top).children.1), &mut self.stack);
+        self.push_all_left_children(top.and_then(|top| self.tree.node(top).children.1));
 
         top.and_then(|token| self.tree.arena[token.0.get()].take().map(|node| node.data))
     }
