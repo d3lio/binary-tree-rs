@@ -5,6 +5,13 @@ use std::{num::NonZeroUsize, ops::Index};
 #[repr(transparent)]
 pub struct Token(NonZeroUsize);
 
+impl Token {
+    fn new(index: usize) -> Self {
+        Self(NonZeroUsize::new(index).unwrap())
+    }
+}
+
+#[derive(Debug)]
 struct Node<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     data: T,
@@ -35,20 +42,21 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 /// assert_eq!(bt.get(token), Some(&1));
 /// # }
 /// ```
+#[derive(Debug)]
 pub struct BinaryTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     arena: Vec<Option<Node<T>>>,
     root: Option<Token>,
+    size: usize,
 }
 
 impl<T> Default for BinaryTree<T>
 where T: Eq + PartialEq + Ord + PartialOrd {
     fn default() -> Self {
-        let arena = vec![None];
-
         Self {
-            arena,
+            arena: vec![None],
             root: Default::default(),
+            size: Default::default(),
         }
     }
 }
@@ -127,6 +135,8 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// # }
     /// ```
     pub fn remove(&mut self, token: Token) -> Option<T> {
+        self.size -= 1;
+
         let node = self.arena[token.0.get()].take()?;
 
         match node.parent {
@@ -209,7 +219,24 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     /// # }
     /// ```
     pub fn size(&self) -> usize {
-        self.arena.iter().filter(|node| node.is_some()).count()
+        self.size
+    }
+
+    /// Check if the tree is empty.
+    ///
+    /// ```
+    /// # use binary_tree::*;
+    /// # fn main() {
+    /// let mut bt = BinaryTree::new();
+    /// assert_eq!(bt.is_empty(), true);
+    /// let token = bt.add(1);
+    /// assert_eq!(bt.is_empty(), false);
+    /// bt.remove(token);
+    /// assert_eq!(bt.is_empty(), true);
+    /// # }
+    /// ```
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
     }
 
     /// Clear the tree.
@@ -227,6 +254,7 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     pub fn clear(&mut self) {
         self.arena = vec![None];
         self.root = None;
+        self.size = 0;
     }
 
     fn node(&self, token: Token) -> &Node<T> {
@@ -238,8 +266,24 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 
     fn create_node(&mut self, data: T) -> Token {
-        self.arena.push(Some(Node::new(data)));
-        Token(NonZeroUsize::new(self.arena.len() - 1).unwrap())
+        self.size += 1;
+
+        let node = Some(Node::new(data));
+        let free_index = self.arena.iter()
+            .enumerate()
+            .skip(1)
+            .find_map(|(index, item)|  match item.as_ref() {
+                None => Some(index),
+                Some(_) => None,
+            });
+
+        if let Some(index) = free_index {
+            self.arena[index] = node;
+            Token::new(index)
+        } else {
+            self.arena.push(node);
+            Token::new(self.arena.len() - 1)
+        }
     }
 
     fn insert_left(&mut self, parent: Token, token: Token) {
@@ -348,6 +392,17 @@ where T: Eq + PartialEq + Ord + PartialOrd {
     }
 }
 
+impl<'a, T> IntoIterator for &'a BinaryTree<T>
+where T: Eq + PartialEq + Ord + PartialOrd {
+    type Item = &'a T;
+
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(self)
+    }
+}
+
 /// Iterates a [`BinaryTree`].
 ///
 /// Guaranteed to be sorted since this is a binary search tree.
@@ -434,7 +489,7 @@ mod test {
         assert_eq!(token.0.get(), 1);
         assert_eq!(bt.arena.len(), 2);
         assert_eq!(bt.size(), 1);
-        assert_eq!(bt.root, Some(Token(NonZeroUsize::new(1).unwrap())));
+        assert_eq!(bt.root, Some(Token::new(1)));
         assert_iter_eq!(bt, vec![1]);
     }
 
@@ -461,12 +516,14 @@ mod test {
 
         assert_eq!(bt.arena.len(), 5);
         assert_eq!(bt.size(), 4);
+        assert_eq!(bt.is_empty(), false);
 
         bt.clear();
 
         assert_eq!(bt.arena.len(), 1);
         assert_eq!(bt.root, None);
         assert_eq!(bt.size(), 0);
+        assert_eq!(bt.is_empty(), true);
     }
 }
 
@@ -692,5 +749,104 @@ mod remove_test {
         assert_eq!(bt.size(), 2);
         assert_iter_eq!(bt, vec![1, 1]);
         assert_into_iter_eq!(bt, vec![1, 1]);
+    }
+
+    #[test]
+    fn into_iterator_for_loop_consume() {
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let mut collected = vec![];
+        for item in bt {
+            collected.push(item);
+        }
+
+        assert_eq!(collected, vec![1, 2, 3, 5]);
+    }
+
+    #[test]
+    fn into_iterator_for_loop_ref() {
+        let bt = vec![1, 5, 2, 3].into_iter().collect::<BinaryTree<_>>();
+        let mut collected = vec![];
+        for item in &bt {
+            collected.push(item);
+        }
+
+        assert_eq!(collected, vec![&1, &2, &3, &5]);
+    }
+
+    #[test]
+    fn reuse_free_arena_space() {
+        let mut bt = BinaryTree::<u32>::new();
+        let mut tokens = vec![
+            bt.add(2),
+            bt.add(1),
+            bt.add(3),
+        ];
+
+        assert_eq!(bt.size(), 3);
+        assert_eq!(bt.arena.len(), 4);
+
+        bt.remove(tokens[1]);
+        bt.remove(tokens[2]);
+
+        assert_eq!(bt.size(), 1);
+        assert_eq!(bt.arena.len(), 4);
+
+        tokens.push(bt.add(2));
+
+        assert_eq!(bt.size(), 2);
+        assert_eq!(bt.arena.len(), 4);
+
+        tokens.push(bt.add(3));
+
+        assert_eq!(bt.size(), 3);
+        assert_eq!(bt.arena.len(), 4);
+
+        tokens.push(bt.add(5));
+
+        assert_eq!(bt.size(), 4);
+        assert_eq!(bt.arena.len(), 5);
+    }
+
+    #[test]
+    fn remove_all_elements() {
+        let mut bt = BinaryTree::<u32>::new();
+        let tokens = vec![
+            bt.add(2),
+            bt.add(1),
+            bt.add(3),
+        ];
+
+        assert_eq!(bt.size(), 3);
+        assert_eq!(bt.arena.len(), 4);
+
+        for token in tokens {
+            bt.remove(token);
+        }
+
+        assert_eq!(bt.size(), 0);
+        assert_eq!(bt.arena.len(), 1);
+    }
+
+    #[test]
+    fn remove_all_elements_and_add_more() {
+        let mut bt = BinaryTree::<u32>::new();
+        let tokens = vec![
+            bt.add(2),
+            bt.add(1),
+            bt.add(3),
+        ];
+
+        for token in tokens {
+            bt.remove(token);
+        }
+
+        bt.add(5);
+        bt.add(4);
+        bt.add(7);
+        bt.add(6);
+
+        assert_eq!(bt.size(), 4);
+        assert_iter_eq!(bt, vec![4, 5, 6, 7]);
+        assert_into_iter_eq!(bt, vec![4, 5, 6, 7]);
     }
 }
