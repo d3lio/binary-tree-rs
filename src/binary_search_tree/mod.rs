@@ -153,6 +153,8 @@ where T: Eq + PartialEq + Ord + PartialOrd {
 
     /// Add a new item to the tree.
     ///
+    /// In case of duplicates it removes only the first value.
+    ///
     /// ```
     /// # use binary_search_tree::*;
     /// # fn main() {
